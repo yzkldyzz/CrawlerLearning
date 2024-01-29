@@ -1,0 +1,49 @@
+淘宝爬虫，经过修改之后成功实现了基本信息的爬取，即销量、店铺名、价格、产地、商品名，爬取页数可以进行调整。
+当然存在一个问题是连续运行次数太多可能会报错就是淘宝的双重登录机制，这个时候关掉界面刷新重来即可。然后爬取得到的数据转换后存在<span>可以通过word换掉。
+具体要得到的数据根据自己需求而定。
+账号密码存在单独的py文件account里面，这样可以提高安全性。
+为了打印可读性我找了m来记录数据数目，爬取页码也可以自己定，当已经成功登陆后就可以注释掉登陆部分也就是前4步。
+代码展示如下：
+from DrissionPage import ChromiumPage
+from account import USER_NAME,PASSWORD
+import time
+import re
+import json
+
+
+page=ChromiumPage()
+#这个cookie要自己找的
+page.listen.start('h5/mtop.relationrecommend.wirelessrecommend.recommend/2.0/')
+#1.打开一个窗口
+page.get("https://login.taobao.com/member/login.jhtml")
+#2.匹配账号输入框并且输入账号信息
+page.ele('xpath://input[@id="fm-login-id"]').input(USER_NAME)
+#3.匹配密码输入框并且输密码信息
+page.ele('xpath://input[@id="fm-login-password"]').input(PASSWORD)
+#4.点击登录
+page.ele('xpath://button[@class="fm-button fm-submit password-login"]').click()
+time.sleep(2)
+#5.打开商品页（这个根据自己的情况粘贴网址）
+page.get('https://s.taobao.com/search?')
+m=0;
+for i in range(5):
+    page.ele('xpath://button[@class="next-btn next-small next-btn-normal next-pagination-item next-next"]').click()
+    pack=page.listen.wait()
+    mtopjsonp=re.findall('mtopjsonp\d+\((.*)\)',pack.response.body)[0]
+    mtopdict=json.loads(mtopjsonp)
+    itemsArray=mtopdict['data']['itemsArray']
+    for item in itemsArray:
+        title=item['title']
+        price=item['price']
+        realSales=item['realSales']
+        procity=item['procity']
+        shop_name=item['shopInfo']['title']
+        m+=1
+        print('第',m,'条数据')
+        print('商品名:'+title)
+        print('价格:',price)
+        print('销量:',realSales)
+        print('产地:',procity)
+        print('店铺名:',shop_name)
+        print()
+    time.sleep(2)
